@@ -1,0 +1,84 @@
+---
+title: 'day 6 interactive: lobster data'
+author: "Jillian Allison"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(here)
+```
+
+Read in lobster data 
+```{r}
+lobster_data <- read_csv(here("data","Lobster_Abundance_All_Years_20210412.csv"), na = "-99999") %>%
+  clean_names() %>%
+  uncount(count)
+```
+
+Summary data 
+```{r}
+lobster_data_summ <- lobster_data %>% 
+  group_by(site, year) %>%
+  summarize(count = n(), 
+            mean_carap_length = mean(size_mm, na.rm = TRUE))
+
+ggplot(data = lobster_data_summ, aes(x = year, y = count)) +
+  geom_line(aes(color = site))
+```
+
+Subsetting 
+```{r}
+lobdata_2020 <- lobster_data %>%
+  filter(year == 2020) %>%
+  mutate(legal = ifelse(size_mm >= 79.81, "Legal", "Illegal")) 
+
+total_lob_2020 <- count(lobdata_2020, site, legal) %>%
+  group_by(site) %>%
+  summarize(total = sum(n)) 
+
+legal_lob_2020 <- lobdata_2020 %>%
+  group_by(site) %>%
+  summarize(legal_count = sum(legal)) 
+
+plot_lobsters_2020 <- merge(total_lob_2020, legal_lob_2020, by = "site") %>%
+  mutate(proportions = legal_count / total)
+```
+
+
+```{r}
+test_total_lob_2020 <- count(lobdata_2020, site, legal)
+
+ggplot(data = test_total_lob_2020, aes(x = site, y = n, fill = legal)) +
+  geom_col(position = "fill") + 
+  scale_fill_viridis_d()
+```
+
+
+
+## TASK 3 RANDOM LOBSTER WRANGLING
+
+Filter
+```{r}
+ex_a <- lobster_data %>%
+  filter(site %in% c("IVEE","CARP","NAPL"))
+```
+
+Group by / summarize 
+```{r}
+ex_b <- lobster_data %>% 
+  group_by(site) %>%
+  summarize(mean = mean(size_mm, na.rm = TRUE), sd = sd(size_mm, na.rm = TRUE))
+```
+
+Mutate 
+```{r}
+ex_c <- lobster_data %>%
+  mutate(size_cm = size_mm * 0.1) %>%
+  mutate(site = tolower(site)) %>% 
+  mutate(area = as.character(area))
+```
+
